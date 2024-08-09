@@ -28,7 +28,6 @@ DEVICE_PATH := device/oneplus/udon
 # SDK
 BOARD_SYSTEMSDK_VERSIONS := 31
 
-# Architecture
 TARGET_ARCH := arm64
 TARGET_ARCH_VARIANT := armv8-a-branchprot
 TARGET_CPU_ABI := arm64-v8a
@@ -39,8 +38,7 @@ TARGET_2ND_ARCH := arm
 TARGET_2ND_ARCH_VARIANT := armv8-2a
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
-TARGET_2ND_CPU_VARIANT := generic
-TARGET_2ND_CPU_VARIANT_RUNTIME := cortex-a75
+TARGET_2ND_CPU_VARIANT := cortex-a75
 
 # Bootloader
 TARGET_NO_BOOTLOADER := false
@@ -189,8 +187,6 @@ RECOVERY_LIBRARY_SOURCE_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/libdebuggerd_client.so \
     $(TARGET_OUT_SYSTEM_EXT_SHARED_LIBRARIES)/vendor.display.config@1.0.so \
     $(TARGET_OUT_SYSTEM_EXT_SHARED_LIBRARIES)/vendor.display.config@2.0.so
-TW_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko rproc_qcom_common.ko q6_dlkm.ko q6_pdr_dlkm.ko q6_notifier_dlkm.ko snd_event_dlkm.ko apr_dlkm.ko gpr_dlkm.ko spf_core_dlkm.ko adsp_loader_dlkm.ko qcom_q6v5.ko qcom_q6v5_pas.ko qcom_esoc.ko qcom_sysmon.ko qcom-hv-haptics.ko haptic_feedback.ko oplus_chg.ko oplus_bsp_tp_custom.ko oplus_bsp_tp_comon.ko oplus_bsp_tp_notify.ko oplus_bsp_tp_tcm_oncell.ko oplus_bsp_tp_tcm_S3910.ko oplus_bsp_tp_syna_comnon.ko oplus_bsp_tp_gt9966.ko oplus_bsp_tp_gt9916.ko "
-TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
 
 # TWRP Debug Flags
 #TWRP_EVENT_LOGGING := true
