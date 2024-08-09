@@ -46,15 +46,13 @@ TARGET_USES_UEFI := true
 TARGET_USES_REMOTEPROC := true
 
 # Kernel
-BOARD_BOOTIMG_HEADER_VERSION := 4
-BOARD_KERNEL_BASE := 0x00000000
-BOARD_KERNEL_CMDLINE := video=vfb:640x400,bpp=32,memsize=3072000 msm_geni_serial.con_enabled=0 bootconfig reboot=panic_warm androidboot.init_fatal_reboot_target=recovery androidboot.selinux=permissive"
-BOARD_KERNEL_PAGESIZE := 4096
-BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOTIMG_HEADER_VERSION)
+# Kernel/Ramdisk
+BOARD_BOOT_HEADER_VERSION := 4
+BOARD_MKBOOTIMG_ARGS := --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
 BOARD_KERNEL_IMAGE_NAME := kernel
 BOARD_RAMDISK_USE_LZ4 := true
-TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/$(BOARD_KERNEL_IMAGE_NAME)
+TARGET_PREBUILT_KERNEL := $(COMMON_PATH)/prebuilt/$(BOARD_KERNEL_IMAGE_NAME)
 
 # Partition Info
 BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED := true
@@ -130,10 +128,10 @@ TARGET_USES_MKE2FS := true
 
 # AVB
 BOARD_AVB_ENABLE := true
-BOARD_AVB_RECOVERY_KEY_PATH := external/avb/test/data/testkey_rsa4096.pem
-BOARD_AVB_RECOVERY_ALGORITHM := SHA256_RSA4096
-BOARD_AVB_RECOVERY_ROLLBACK_INDEX := 1
-BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
+BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 3
+
+BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
+
 
 # Encryption
 BOARD_USES_METADATA_PARTITION := true
@@ -144,17 +142,9 @@ PLATFORM_SECURITY_PATCH := 2099-12-31
 VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
 
 # Extras
-TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
+#TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
 TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
 
-# Vibrator
-TW_SUPPORT_INPUT_AIDL_HAPTICS := true
-TW_SUPPORT_INPUT_AIDL_HAPTICS_FIX_OFF := true
-
-TARGET_RECOVERY_DEVICE_MODULES += libexpat android.hardware.vibrator-V2-ndk
-RECOVERY_LIBRARY_SOURCE_FILES += \
-     $(TARGET_OUT_SHARED_LIBRARIES)/libexpat.so \
-    $(TARGET_OUT_SHARED_LIBRARIES)/android.hardware.vibrator-V2-ndk.so
 
 # TWRP specific build flags
 TARGET_RECOVERY_QCOM_RTC_FIX := true
@@ -171,11 +161,12 @@ TW_EXTRA_LANGUAGES := true
 TW_INCLUDE_CRYPTO := true
 TW_NO_EXFAT_FUSE := true
 TW_INCLUDE_RESETPROP := true
+TW_INCLUDE_FASTBOOTD := true
 TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_OVERRIDE_SYSTEM_PROPS := \
-    "ro.build.product;ro.build.fingerprint=ro.vendor.build.fingerprint;ro.build.version.incremental"
-TW_OVERRIDE_PROPS_ADDITIONAL_PARTITIONS := vendor
+    "ro.build.date.utc;ro.bootimage.build.date.utc=ro.build.date.utc;ro.odm.build.date.utc=ro.build.date.utc;ro.product.build.date.utc=ro.build.date.utc;ro.system.build.date.utc=ro.build.date.utc;ro.system_ext.build.date.utc=ro.build.date.utc;ro.vendor.build.date.utc=ro.build.date.utc;ro.build.product;ro.build.fingerprint=ro.system.build.fingerprint;ro.build.version.incremental;ro.product.device=ro.product.system.device;ro.product.model=ro.product.system.model;ro.product.name=ro.product.system.name"
+TW_USE_FSCRYPT_POLICY := 2
 RECOVERY_LIBRARY_SOURCE_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/android.hidl.allocator@1.0.so \
     $(TARGET_OUT_SHARED_LIBRARIES)/android.hidl.memory@1.0.so \
@@ -184,7 +175,7 @@ RECOVERY_LIBRARY_SOURCE_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/libhidlmemory.so \
     $(TARGET_OUT_SHARED_LIBRARIES)/libion.so \
     $(TARGET_OUT_SHARED_LIBRARIES)/libnetutils.so \
-    $(TARGET_OUT_SHARED_LIBRARIES)/libdebuggerd_client.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libxml2.so \
     $(TARGET_OUT_SYSTEM_EXT_SHARED_LIBRARIES)/vendor.display.config@1.0.so \
     $(TARGET_OUT_SYSTEM_EXT_SHARED_LIBRARIES)/vendor.display.config@2.0.so
 
