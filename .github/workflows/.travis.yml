@@ -1,0 +1,89 @@
+language: minimal
+dist: focal
+os: linux
+
+env:
+  global:
+    - DEVICE_NAME=macedonia
+    - DEVICE_PATH=device/realme/macedonia
+    - LDCHECK=system/bin/qseecomd
+    - MANIFEST_BRANCH=twrp-12.1
+    - DEVICE_TREE=https://github.com/cd-Crypton/custom_recovery_tree_realme_macedonia
+    - DEVICE_TREE_BRANCH=twrp-12.1
+    - BUILD_TARGET=recovery
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y upgrade
+  - sudo apt-get -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev
+  - sudo add-apt-repository universe
+  - sudo apt-get -y install libncurses5
+  - sudo apt-get -y install zulu-8
+  - mkdir ~/bin
+  - curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+  - chmod a+x ~/bin/repo
+  - sudo ln -sf ~/bin/repo /usr/bin/repo
+
+script:
+  - echo "Manifest Branch: ${MANIFEST_BRANCH}"
+  - echo "Device Tree: ${DEVICE_TREE}"
+  - echo "Device Branch: ${DEVICE_TREE_BRANCH}"
+  - echo "Device Path: ${DEVICE_PATH}"
+  - echo "Device Name: ${DEVICE_NAME}"
+  - echo "Build Target: ${BUILD_TARGET}image"
+
+  # Determinar la URL del manifiesto en función de la rama seleccionada
+  - if [ "${MANIFEST_BRANCH}" = "twrp-11" ] || [ "${MANIFEST_BRANCH}" = "twrp-12.1" ]; then
+      REPO_URL=https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git;
+    else
+      REPO_URL=https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git;
+    fi
+
+  # Clonar el repositorio de manifiesto
+  - mkdir android-recovery
+  - cd android-recovery
+  - git config --global user.name "${TRAVIS_REPO_SLUG}"
+  - git config --global user.email "${TRAVIS_BUILD_ID}+${TRAVIS_REPO_SLUG}@users.noreply.github.com"
+  - repo init --depth=1 -u $REPO_URL -b $MANIFEST_BRANCH
+  - sed -i '/<remove-project name="platform\/external\/gflags"  \/>/d' .repo/manifests/remove-minimal.xml
+  - repo sync -j$(nproc --all) --force-sync
+
+  # Clonar el árbol del dispositivo
+  - git clone ${DEVICE_TREE} -b ${DEVICE_TREE_BRANCH} ./${DEVICE_PATH}
+  - cd ${DEVICE_PATH}
+  - export COMMIT_ID=$(git rev-parse HEAD)
+
+  # Volver al directorio principal
+  - cd android-recovery
+  - if [ -f ${DEVICE_PATH}/twrp_${DEVICE_NAME}.mk ]; then
+      export DEVICE_MAKEFILE=twrp_${DEVICE_NAME};
+    elif [ -f ${DEVICE_PATH}/omni_${DEVICE_NAME}.mk ]; then
+      export DEVICE_MAKEFILE=omni_${DEVICE_NAME};
+    else
+      echo "No recovery makefile found!";
+      exit 1;
+    fi
+
+  # Instalar Python 2 si es necesario
+  - if [ "${MANIFEST_BRANCH}" != "twrp-11" ] && [ "${MANIFEST_BRANCH}" != "twrp-12.1" ]; then
+      sudo apt-get -y install python2;
+      sudo ln -sf /usr/bin/python2 /usr/bin/python;
+    fi
+
+  # Construir la imagen
+  - source build/envsetup.sh
+  - export ALLOW_MISSING_DEPENDENCIES=true
+  - lunch ${DEVICE_MAKEFILE}-eng
+  - make clean
+  - make ${BUILD_TARGET}image -j$(nproc --all)
+  - export BUILD_DATE=$(date +%Y%m%d)
+
+  # Subir la imagen a GitHub Releases
+  - if [ -n "${GITHUB_TOKEN}" ]; then
+      curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+        -d "{\"tag_name\": \"TWRP-${DEVICE_NAME}-${BUILD_DATE}-${BUILD_TARGET}\", \"target_commitish\": \"${TRAVIS_COMMIT}\", \"name\": \"TWRP-${DEVICE_NAME}-${BUILD_DATE}-${BUILD_TARGET}\", \"body\": \"Build: ${MANIFEST_BRANCH}\nDevice: ${DEVICE_NAME}\nCommit: ${COMMIT_ID}\", \"draft\": false, \"prerelease\": false}" \
+        https://api.github.com/repos/${TRAVIS_REPO_SLUG}/releases \
+        | jq -r ".upload_url" | sed -e "s/{?name,label}//" | xargs -I {} \
+        curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: $(file -b --mime-type /home/travis/twrp/out/target/product/${DEVICE_NAME}/${BUILD_TARGET}.img)" \
+        --data-binary @/home/travis/twrp/out/target/product/${DEVICE_NAME}/${BUILD_TARGET}.img "{}?name=${BUILD_TARGET}.img";
+    fi
